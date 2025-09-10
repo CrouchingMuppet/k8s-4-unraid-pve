@@ -1,0 +1,7 @@
+---
+- name: Deploy role
+  hosts: all
+  gather_facts: false
+  vars_files: defaults.yml
+  roles:
+    - okd-cluster

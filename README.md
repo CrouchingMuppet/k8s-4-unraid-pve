@@ -34,22 +34,22 @@ on whatever that makes sense to you.
    - `host_vars/*`
    - `inventory/*`
    - `loadbalancer/defaults/main.yml`
-   - `okd-server/defaults/main.yml`
+   - `okd-cluster/defaults/main.yml`
 
 There are four main playbooks:
 
 ```sh
 # Create OKD infra within Proxmox
-ansible-playbook create-pve.yml
+ansible-playbook create.yml -l pve
 # Remove OKD infra from Proxmox
-ansible-playbook destroy-pve.yml
+ansible-playbook destroy.yml -l pve
 # Remove everything including OKD releases
-ansible-playbook destroy-pve.yml -e "persistence_cleanup=true"
+ansible-playbook destroy.yml -l pve -e "persistence_cleanup=true"
 
 # Create OKD infra within Unraid
-ansible-playbook create-unraid.yml
+ansible-playbook create.yml -l unraid
 # Remove OKD infra from Unraid
-ansible-playbook destroy-unraid.yml
+ansible-playbook destroy.yml -l unraid
 # Remove everything including OKD releases
-ansible-playbook destroy-unraid.yml -e "persistence_cleanup=true"
+ansible-playbook destroy.yml -l unraid -e "persistence_cleanup=true"
 ```

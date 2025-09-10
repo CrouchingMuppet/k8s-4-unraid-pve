@@ -1,6 +1,6 @@
 ---
 pve:
   hosts:
-    pve:
+    pve1:
       ansible_host: pve.localdomain
       ansible_user: root
