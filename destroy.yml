@@ -1,129 +1,25 @@
-### PVE #######################################################################
-
-- name: Destroy load balancer
-  hosts: pve
+- name: Destroy okd-cluster role
+  hosts: all
   gather_facts: false
   vars_files:
     - defaults.yml
+    - loadbalancer/defaults/main.yml
+    - okd-cluster/defaults/main.yml
   tasks:
-    - name: Remove haproxy container
-      ansible.builtin.shell:
-        cmd: |
-          pct stop {{ pve_loadbalancer_id }}
-          pct destroy {{ pve_loadbalancer_id }}
-        removes: /etc/pve/lxc/{{ pve_loadbalancer_id }}.conf
-      register: remove_container
+    - name: Destroy load balancer
+      ansible.builtin.include_tasks:
+        file: "loadbalancer/tasks/{{ group_names | first }}-destroy.yml"
+
     - name: Remove openshift installer
       ansible.builtin.file:
         path: "/usr/local/bin/openshift-install"
         state: absent
       when: persistence_cleanup | bool
 
-###
-
-- name: Destroy OpenShift machines
-  hosts: pve
-  gather_facts: false
-  vars_files:
-    - defaults.yml
-    - okd-cluster/defaults/main.yml
-  tasks:
-    - name: Destroy bootstrap machine
-      ansible.builtin.shell:
-        cmd: |
-          qm stop {{ pve_bootstrap_id }}
-          qm destroy {{ pve_bootstrap_id }}
-        removes: /etc/pve/qemu-server/{{ pve_bootstrap_id }}.conf
-      register: destroy_vm
-    - name: Destroy control planes
-      vars:
-        template_id: "{{ pve_controlplane_ids_start_from + index }}"
-      ansible.builtin.shell:
-        cmd: |
-          qm stop {{ template_id }}
-          qm destroy {{ template_id }}
-        removes: /etc/pve/qemu-server/{{ template_id }}.conf
-      register: destroy_vm
-      loop: "{{ controlplane_ips }}"
-      loop_control:
-        index_var: index
-    - name: Destroy worker nodes
-      vars:
-        template_id: "{{ pve_worker_ids_start_from + index }}"
-      ansible.builtin.shell:
-        cmd: |
-          qm stop {{ template_id }}
-          qm destroy {{ template_id }}
-        removes: /etc/pve/qemu-server/{{ template_id }}.conf
-      register: destroy_vm
-      loop: "{{ worker_ips }}"
-      loop_control:
-        index_var: index
-    - name: Destroy template machine
-      ansible.builtin.command:
-        cmd: qm destroy {{ pve_scos_template_id }}
-        removes: /etc/pve/qemu-server/{{ pve_scos_template_id }}.conf
-      register: destroy_vm
-    - name: Remove persistence folder
-      ansible.builtin.file:
-        path: "{{ persistence_folder }}"
-        state: absent
-      when: persistence_cleanup | bool
-
-### Unraid ####################################################################
-
-- name: Destroy load balancers
-  hosts: unraid
-  gather_facts: false
-  vars_files:
-    - defaults.yml
-
-  tasks:
-    - name: Destroy haproxy container
-      community.docker.docker_compose_v2:
-        project_src: "{{ unraid_haproxy_compose_project }}"
-        state: absent
-        remove_images: all
-      failed_when: false
-    - name: Remove appdata folder
-      ansible.builtin.file:
-        path: "{{ unraid_haproxy_appdata }}"
-        state: absent
-
-###
-
-- name:
-  hosts: unraid
-  gather_facts: false
-  vars_files:
-    - defaults.yml
-    - okd-cluster/defaults/main.yml
-
-  tasks:
-    - name: Destroy bootstrap machine
-      vars:
-        vm_files_path: "{{ unraid_vms_path }}/{{ bootstrap_name }}"
-        vm_name: "{{ bootstrap_name }}"
+    - name: Destroy OpenShift machines
       ansible.builtin.include_tasks:
-        file: okd-cluster/tasks/unraid-destroy-vm.yml
-    - name: Destroy control planes
-      vars:
-        vm_files_path: "{{ unraid_vms_path }}/{{ controlplane_name }}{{ index }}"
-        vm_name: "{{ controlplane_name }}{{ index }}"
-      ansible.builtin.include_tasks:
-        file: okd-cluster/tasks/unraid-destroy-vm.yml
-      loop: "{{ controlplane_ips }}"
-      loop_control:
-        index_var: index
-    - name: Destroy worker nodes
-      vars:
-        vm_files_path: "{{ unraid_vms_path }}/{{ worker_name }}{{ index }}"
-        vm_name: "{{ worker_name }}{{ index }}"
-      ansible.builtin.include_tasks:
-        file: okd-cluster/tasks/unraid-destroy-vm.yml
-      loop: "{{ worker_ips }}"
-      loop_control:
-        index_var: index
+        file: "okd-cluster/tasks/{{ group_names | first }}-destroy.yml"
+
     - name: Remove persistence folder
       ansible.builtin.file:
         path: "{{ persistence_folder }}"

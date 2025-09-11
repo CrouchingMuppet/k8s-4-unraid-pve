@@ -1,0 +1,6 @@
+- name: Destroy container
+  ansible.builtin.shell:
+    cmd: |
+      pct stop {{ pve_loadbalancer_id }}
+      pct destroy {{ pve_loadbalancer_id }}
+    removes: /etc/pve/lxc/{{ pve_loadbalancer_id }}.conf

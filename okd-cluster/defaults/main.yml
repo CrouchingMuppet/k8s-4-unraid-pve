@@ -1,4 +1,5 @@
 ---
+kube_config_dest: ~/.kube/config
 ignition_folder: "{{ persistence_folder }}/ignition"
 
 openshift_release: 4.20.0-okd-scos.ec.9

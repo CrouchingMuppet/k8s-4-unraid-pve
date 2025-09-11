@@ -1,4 +1,4 @@
----
+## Proxmox VE #################################################################
 - name: Apply haproxy configuration
   ansible.builtin.shell: |
     pct start {{ pve_loadbalancer_id }}

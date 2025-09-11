@@ -1,0 +1,36 @@
+- name: Destroy bootstrap machine
+  ansible.builtin.shell:
+    cmd: |
+      qm stop {{ pve_bootstrap_id }}
+      qm destroy {{ pve_bootstrap_id }}
+    removes: /etc/pve/qemu-server/{{ pve_bootstrap_id }}.conf
+  register: destroy_vm
+- name: Destroy control planes
+  vars:
+    template_id: "{{ pve_controlplane_ids_start_from + index }}"
+  ansible.builtin.shell:
+    cmd: |
+      qm stop {{ template_id }}
+      qm destroy {{ template_id }}
+    removes: /etc/pve/qemu-server/{{ template_id }}.conf
+  register: destroy_vm
+  loop: "{{ controlplane_ips }}"
+  loop_control:
+    index_var: index
+- name: Destroy worker nodes
+  vars:
+    template_id: "{{ pve_worker_ids_start_from + index }}"
+  ansible.builtin.shell:
+    cmd: |
+      qm stop {{ template_id }}
+      qm destroy {{ template_id }}
+    removes: /etc/pve/qemu-server/{{ template_id }}.conf
+  register: destroy_vm
+  loop: "{{ worker_ips }}"
+  loop_control:
+    index_var: index
+- name: Destroy template machine
+  ansible.builtin.command:
+    cmd: qm destroy {{ pve_scos_template_id }}
+    removes: /etc/pve/qemu-server/{{ pve_scos_template_id }}.conf
+  register: destroy_vm
