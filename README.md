@@ -53,5 +53,5 @@ e.g.
 ansible-playbook create.yml --limit pve --tags okd
 
 # Remove any deployed infra on Unraid with optional retention of downloads
-ansible-playbook destroy.yml --limit unraid --extra-args "persistence_cleanup=false"
+ansible-playbook destroy.yml --limit unraid --extra-vars "persistence_cleanup=false"
 ```
