@@ -2,26 +2,21 @@
   ansible.builtin.shell:
     chdir: "{{ persistence_folder }}"
     cmd: |
-      qm create {{ pve_template_vm_id }} --name okd-template \
+      qm create {{ pve_template_vm_id }} --name k3s-template \
         --net0 virtio,bridge=vmbr0 --cpu host
-      qm importdisk {{ pve_template_vm_id }} scos.qcow2 {{ pve_container_storage }}
+      qm importdisk {{ pve_template_vm_id }} vm.qcow2 {{ pve_container_storage }}
       qm set {{ pve_template_vm_id }} --scsihw virtio-scsi-single \
         --scsi0 {{ pve_container_storage }}:vm-{{ pve_template_vm_id }}-disk-0
-      qm set {{ pve_template_vm_id }} --boot c --bootdisk scsi0
+      qm set {{ pve_template_vm_id }} --ide2 {{ pve_container_storage }}:cloudinit
+      qm set {{ pve_template_vm_id }} --boot order=scsi0
+      qm set {{ pve_template_vm_id }} --serial0 socket --vga serial0
+      qm set {{ pve_template_vm_id }} --sshkey <(echo '{{ ssh_key }}' && cat ~/.ssh/id_rsa.pub)
       qm resize {{ pve_template_vm_id }} scsi0 {{ pve_scos_template_add_storage }}
       qm template {{ pve_template_vm_id }}
     creates: /etc/pve/qemu-server/{{ pve_template_vm_id }}.conf
-- name: Create bootstrap VM
-  ansible.builtin.shell:
-    cmd: |
-      qm clone {{ pve_template_vm_id }} {{ pve_bootstrap_id }} --name {{ bootstrap_name }}
-      qm set {{ pve_bootstrap_id }} --net0 virtio,bridge=vmbr0,macaddr={{ bootstrap_mac_address }}
-      qm set {{ pve_bootstrap_id }} --cores {{ bootstrap_cores }}
-      qm set {{ pve_bootstrap_id }} --memory {{ bootstrap_memory }}
-      echo 'args: -fw_cfg name=opt/com.coreos/config,file={{ ignition_folder }}/bootstrap.ign' \
-        >> /etc/pve/qemu-server/{{ pve_bootstrap_id }}.conf
-      qm start {{ pve_bootstrap_id }}
-    creates: /etc/pve/qemu-server/{{ pve_bootstrap_id }}.conf
+  args: # we need bash for process substitution
+    executable: /bin/bash
+
 - name: Create control plane VMs
   vars:
     template_id: "{{ pve_controlplane_ids_start_from + index }}"
@@ -32,11 +27,11 @@
       qm set {{ template_id }} --cores {{ controlplane_cores }}
       qm set {{ template_id }} --memory {{ controlplane_memory }}
       qm set {{ template_id }} --agent {{ pve_controlplane_agent }}
-      echo 'args: -fw_cfg name=opt/com.coreos/config,file={{ ignition_folder }}/master.ign' \
-        >> /etc/pve/qemu-server/{{ template_id }}.conf
       qm start {{ template_id }}
     creates: /etc/pve/qemu-server/{{ template_id }}.conf
   loop: "{{ controlplane_ips }}"
+  async: 30
+  poll: 3
   loop_control:
     index_var: index
 - name: Create worker VMs
@@ -49,10 +44,10 @@
       qm set {{ template_id }} --cores {{ worker_cores }}
       qm set {{ template_id }} --memory {{ worker_memory }}
       qm set {{ template_id }} --agent {{ pve_worker_agent }}
-      echo 'args: -fw_cfg name=opt/com.coreos/config,file={{ ignition_folder }}/worker.ign' \
-        >> /etc/pve/qemu-server/{{ template_id }}.conf
       qm start {{ template_id }}
     creates: /etc/pve/qemu-server/{{ template_id }}.conf
   loop: "{{ worker_ips }}"
+  async: 30
+  poll: 3
   loop_control:
     index_var: index

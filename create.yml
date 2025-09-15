@@ -8,3 +8,13 @@
   tags:
     - never
     - okd
+
+- name: Deploy k3s-cluster role
+  hosts: all
+  gather_facts: false
+  vars_files: defaults.yml
+  roles:
+    - k3s-cluster
+  tags:
+    - never
+    - k3s

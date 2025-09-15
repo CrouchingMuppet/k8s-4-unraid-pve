@@ -9,19 +9,46 @@
     - name: Destroy load balancer
       ansible.builtin.include_tasks:
         file: "loadbalancer/tasks/{{ group_names | first }}-destroy.yml"
-
     - name: Remove openshift installer
       ansible.builtin.file:
         path: "/usr/local/bin/openshift-install"
         state: absent
       when: persistence_cleanup | bool
-
     - name: Destroy OpenShift machines
       ansible.builtin.include_tasks:
         file: "okd-cluster/tasks/{{ group_names | first }}-destroy.yml"
+  tags:
+    - never
+    - okd
 
-    - name: Remove persistence folder
+- name: Destroy k3s-cluster role
+  hosts: all
+  gather_facts: false
+  vars_files:
+    - defaults.yml
+    - loadbalancer/defaults/main.yml
+    - k3s-cluster/defaults/main.yml
+  tasks:
+    - name: Destroy load balancer
+      ansible.builtin.include_tasks:
+        file: "loadbalancer/tasks/{{ group_names | first }}-destroy.yml"
+
+    - name: Destroy virtual machines
+      ansible.builtin.include_tasks:
+        file: "k3s-cluster/tasks/{{ group_names | first }}-destroy.yml"
+  tags:
+    - never
+    - k3s
+
+- name: Remove persistence folder
+  hosts: all
+  vars_files:
+    - defaults.yml
+  tasks:
+    - name: Delete persistence folder
       ansible.builtin.file:
         path: "{{ persistence_folder }}"
         state: absent
       when: persistence_cleanup | bool
+  tags:
+    - always

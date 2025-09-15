@@ -1,0 +1,43 @@
+- name: Download cdrtools
+  ansible.builtin.shell:
+    cmd: "curl -L -o {{ persistence_folder }}/cdrtools.tar.gz https://slackware.uk/slackware/slackware64-current/slackware64/ap/cdrtools-3.02a09-x86_64-1.txz"
+    creates: "{{ persistence_folder }}/cdrtools.tar.gz"
+- name: Create cdrtools extract path
+  ansible.builtin.file:
+    path: "{{ persistence_folder }}/cdrtools"
+    state: directory
+- name: Extract cdrtools
+  ansible.builtin.unarchive:
+    src: "{{ persistence_folder }}/cdrtools.tar.gz"
+    dest: "{{ persistence_folder }}/cdrtools"
+    remote_src: true
+- name: Copy mkisofs binary
+  ansible.builtin.copy:
+    src: "{{ persistence_folder }}/cdrtools/usr/bin/mkisofs"
+    dest: /usr/local/bin/mkisofs
+    remote_src: true
+    mode: "0755"
+- name: Control plane machines
+  vars:
+    vm_files_path: "{{ unraid_vms_path }}/{{ controlplane_name }}{{ index }}"
+    vm_cores: "{{ controlplane_cores }}"
+    vm_mac_addr: "{{ controlplane_mac_addresses[index] }}"
+    vm_mem: "{{ controlplane_memory }}"
+    vm_name: "{{ controlplane_name }}{{ index }}"
+  ansible.builtin.include_tasks:
+    file: unraid-create-vm.yml
+  loop: "{{ controlplane_ips }}"
+  loop_control:
+    index_var: index
+- name: Worker machines
+  vars:
+    vm_cores: "{{ worker_cores }}"
+    vm_files_path: "{{ unraid_vms_path }}/{{ worker_name }}{{ index }}"
+    vm_mac_addr: "{{ worker_mac_addresses[index] }}"
+    vm_mem: "{{ worker_memory }}"
+    vm_name: "{{ worker_name }}{{ index }}"
+  ansible.builtin.include_tasks:
+    file: unraid-create-vm.yml
+  loop: "{{ worker_ips }}"
+  loop_control:
+    index_var: index

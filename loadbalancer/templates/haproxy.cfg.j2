@@ -25,7 +25,9 @@ frontend api_fe_{{ port }}
 backend api_be_{{ port }}
     balance roundrobin
     mode tcp
+{% if 'okd' in ansible_run_tags %}
     server bootstrap {{ bootstrap_ip }}:{{ port }} check
+{% endif %}
 {% for ip in controlplane_ips %}
     server {{ ip }} {{ ip }}:{{ port }} check
 {% endfor %}
