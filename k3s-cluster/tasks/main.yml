@@ -4,6 +4,19 @@
     # enable distributed etcd if we are a HA cluster
     extra_args: "{% if controlplane_ips | count > 2 %} --cluster-init {% endif %}"
   block:
+    - name: Install prerequisites
+      vars:
+        # iscsi-initiator-utils and nfs-utils are optional, used for longhorn storage
+        packages:
+          - iscsi-initiator-utils
+          - nfs-utils
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+        update_cache: true
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
     - name: Install k3s on first control plane node
       ansible.builtin.shell:
         cmd: |
