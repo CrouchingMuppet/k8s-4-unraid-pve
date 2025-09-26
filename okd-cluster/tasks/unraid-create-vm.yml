@@ -27,8 +27,7 @@
     - name: Create VM
       ansible.builtin.command:
         cmd: virsh define {{ vm_files_path }}/okd-vm.xml
-      register: output
-      changed_when: '"defined from" in output.stdout'
+        creates: "/etc/libvirt/qemu/{{ vm_name }}.xml"
     - name: Start VM
       ansible.builtin.command:
         cmd: virsh start {{ vm_name }}

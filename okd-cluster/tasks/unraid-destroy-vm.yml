@@ -7,8 +7,7 @@
 - name: Undefine VM
   ansible.builtin.command:
     cmd: virsh undefine --nvram {{ vm_name }}
-  register: output
-  changed_when: false
+    removes: "/etc/libvirt/qemu/{{ vm_name }}.xml"
   failed_when: false
 
 - name: Remove VM files path

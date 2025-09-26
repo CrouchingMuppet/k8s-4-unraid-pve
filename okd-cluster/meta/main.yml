@@ -33,7 +33,6 @@ galaxy_info:
 dependencies:
   - role: loadbalancer
     vars:
-      loadbalancer_host_name: okd-haproxy
       loadbalancer_api_ports: [6443, 22623]
 
   # List your role dependencies here, one per line. Be sure to remove the '[]' above,

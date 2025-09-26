@@ -9,6 +9,6 @@
 
 - name: Restart haproxy container
   community.docker.docker_compose_v2:
-    project_src: /tmp
-    files: okd.haproxy.compose.yaml
+    project_src: "{{ unraid_haproxy_compose_project }}"
+    files: compose.yaml
     state: restarted

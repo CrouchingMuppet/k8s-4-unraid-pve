@@ -1,4 +1,6 @@
 ---
+persistence_folder: /usr/local/share/k8s-4-unraid-pve
+
 pve_template_storage: templates
 pve_container_storage: local-lvm
 

@@ -2,3 +2,4 @@
 loadbalancer_ip: 192.168.1.99
 loadbalancer_enable_ssh: true
 loadbalancer_ingress_ports: [80, 443]
+loadbalancer_host_name: lb-haproxy

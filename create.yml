@@ -18,3 +18,13 @@
   tags:
     - never
     - k3s
+
+- name: Deploy k8s-cluster role
+  hosts: all
+  gather_facts: false
+  vars_files: defaults.yml
+  roles:
+    - k8s-cluster
+  tags:
+    - never
+    - k8s

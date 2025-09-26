@@ -34,8 +34,8 @@
         creates: "{{ vm_files_path }}/cloudinit.iso"
     - name: Create VM template
       ansible.builtin.template:
-        src: k3s-vm.xml.j2
-        dest: "{{ vm_files_path }}/k3s-vm.xml"
+        src: kvm.xml.j2
+        dest: "{{ vm_files_path }}/kvm.xml"
         mode: "0644"
     - name: Create VM NVRAM
       ansible.builtin.copy:
@@ -45,15 +45,13 @@
         mode: "0644"
     - name: Create VM
       ansible.builtin.command:
-        cmd: virsh define {{ vm_files_path }}/k3s-vm.xml
-      register: output
-      changed_when: '"defined from" in output.stdout'
+        cmd: virsh define {{ vm_files_path }}/kvm.xml
+        creates: /etc/libvirt/qemu/{{ vm_name }}.xml
     - name: Start VM
       ansible.builtin.command:
         cmd: virsh start {{ vm_name }}
       register: output
-      changed_when: '"started from" in output.stdout'
-  rescue:
-    - name: Destroy VM
-      ansible.builtin.include_tasks:
-        file: unraid-destroy-vm.yml
+      changed_when: '"started" in output.stdout'
+      failed_when: >
+        ("started" not in output.stdout) and
+        ("already active" not in output.stderr)

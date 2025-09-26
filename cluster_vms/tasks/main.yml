@@ -1,0 +1,32 @@
+---
+- name: VM OS image
+  block:
+    - name: Download vm image # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: "curl -L -o {{ persistence_folder }}/vm.qcow2 {{ vm_image_url }}"
+        creates: "{{ persistence_folder }}/vm.qcow2"
+  rescue:
+    - name: Delete vm image
+      ansible.builtin.file:
+        path: "{{ persistence_folder }}/vm.qcow2"
+        state: absent
+
+- name: Create cluster virtual machines
+  ansible.builtin.include_tasks:
+    file: "{{ group_names | first }}-create-all.yml"
+
+- name: Wait for cloud-init to finish
+  ansible.builtin.wait_for:
+    host: "{{ item }}"
+    port: 22
+    timeout: 300
+    state: started
+  loop: "{{ controlplane_ips + worker_ips }}"
+
+- name: Update known hosts
+  ansible.builtin.known_hosts:
+    name: "{{ item }}"
+    key: "{{ lookup('pipe', 'ssh-keyscan -H ' + item) }}"
+    state: present
+  loop: "{{ controlplane_ips + worker_ips }}"
+  delegate_to: localhost

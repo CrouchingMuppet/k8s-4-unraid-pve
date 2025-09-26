@@ -1,0 +1,147 @@
+---
+- name: Configure cluster
+  block:
+    - name: Install prerequisites
+      vars:
+        # iscsi-initiator-utils and nfs-utils are optional, used for longhorn storage
+        packages:
+          - gpg
+          - iscsi-initiator-utils
+          - nfs-utils
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+        update_cache: true
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Enable kubernetes repo
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/{{ k8s_version }}/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/{{ k8s_version }}/rpm/repodata/repomd.xml.key
+          EOF
+        creates: /etc/yum.repos.d/kubernetes.repo
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Enable cri-o repo
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF | tee /etc/yum.repos.d/cri-o.repo
+          [cri-o]
+          name=CRI-O
+          baseurl=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ crio_version }}/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ crio_version }}/rpm/repodata/repomd.xml.key
+          EOF
+        creates: /etc/yum.repos.d/cri-o.repo
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Enable netfilter
+      ansible.builtin.shell:
+        cmd: |
+          echo 'br_netfilter' | tee /etc/modules-load.d/br_netfilter.conf
+          modprobe br_netfilter
+        creates: /etc/modules-load.d/br_netfilter.conf
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Enable ip forwarding
+      ansible.builtin.shell:
+        cmd: |
+          echo net.ipv4.ip_forward = 1 | tee /etc/sysctl.d/99-ip-forward.conf
+          sysctl -w net.ipv4.ip_forward=1
+        creates: /etc/sysctl.d/99-ip_forward.conf
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Install kubernetes packages
+      ansible.builtin.dnf:
+        name:
+          - container-selinux
+          - cri-o
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: true
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Start and enable cri-o
+      ansible.builtin.systemd:
+        name: crio
+        state: started
+        enabled: true
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Start and enable kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: true
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Initialize first control plane
+      ansible.builtin.shell:
+        cmd: |
+          kubeadm init \
+            --upload-certs \
+            --apiserver-advertise-address={{ controlplane_ips[0] }} \
+            --control-plane-endpoint={{ loadbalancer_ip }}:6443
+        creates: /etc/kubernetes/admin.conf
+      become: true
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+    - name: Download kube config
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ kube_config_dest }}"
+        flat: yes
+      become: true
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+    - name: Get join command
+      ansible.builtin.shell:
+        cmd: kubeadm token create --print-join-command
+      register: join_command
+      become: true
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+    - name: Join control planes
+      ansible.builtin.shell:
+        cmd: "{{ join_command.stdout }}"
+      become: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips[1:] }}"
+    - name: Untaint control plane if no workers
+      ansible.builtin.shell:
+        cmd: kubectl taint nodes {{ controlplane_name }}0 node-role.kubernetes.io/master:NoSchedule-
+      delegate_to: localhost
+      when: worker_ips | length == 0
+      failed_when: false
+  rescue:
+    - name: Uninstall k8s from all nodes
+      ansible.builtin.shell:
+        cmd: |
+          kubeadm reset -f
+          dnf remove -y cri-o kubeadm kubelet kubectl
+          rm -rf ~/.kube
+          rm -rf /etc/cni/net.d
+          rm -rf /var/lib/etcd
+          rm -rf /var/lib/kubelet
+          rm -rf /var/lib/kubernetes
+          rm -rf /var/run/kubernetes
+          rm -rf /etc/yum.repos.d/kubernetes.repo
+          rm -rf /etc/yum.repos.d/cri-o.repo
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"
+      become: true
+      failed_when: false

@@ -1,110 +1,63 @@
 ---
-- name: Create cluster
+- name: Configure cluster
+  vars:
+    # enable distributed etcd if we are a HA cluster
+    extra_args: "{% if controlplane_ips | count > 2 %} --cluster-init {% endif %}"
   block:
-    # Unraid has no libssl which python needs to use get_url module
-    - name: VM OS image
-      block:
-        - name: Download vm image # noqa: command-instead-of-module
-          ansible.builtin.command:
-            cmd: "curl -L -o {{ persistence_folder }}/vm.qcow2 {{ vm_image_url }}"
-            creates: "{{ persistence_folder }}/vm.qcow2"
-      rescue:
-        - name: Delete vm image
-          ansible.builtin.file:
-            path: "{{ persistence_folder }}/vm.qcow2"
-            state: absent
-
-    - name: Create virtual machines
-      block:
-        - name: Create VMs
-          ansible.builtin.include_tasks:
-            file: "{{ group_names | first }}-create.yml"
-        - name: Wait for cloud-init to finish
-          ansible.builtin.wait_for:
-            host: "{{ item }}"
-            port: 22
-            timeout: 300
-            state: started
-          loop: "{{ controlplane_ips + worker_ips }}"
-        - name: Update known hosts
-          ansible.builtin.known_hosts:
-            name: "{{ item }}"
-            key: "{{ lookup('pipe', 'ssh-keyscan -H ' + item) }}"
-            state: present
-          loop: "{{ controlplane_ips + worker_ips }}"
-          delegate_to: localhost
-      rescue:
-        - name: Destroy VMs
-          ansible.builtin.include_tasks:
-            file: "{{ group_names | first }}-destroy.yml"
-        - name: Clean known hosts
-          ansible.builtin.known_hosts:
-            name: "{{ item }}"
-            state: absent
-          loop: "{{ controlplane_ips + worker_ips }}"
-          async: 10
-          poll: 0
-          delegate_to: localhost
-
-    - name: Configure cluster
-      vars:
-        # enable distributed etcd if we are a HA cluster
-        extra_args: "{% if controlplane_ips | count > 2 %} --cluster-init {% endif %}"
-      block:
-        - name: Install k3s on first control plane node
-          ansible.builtin.shell:
-            cmd: |
-              curl -sfL https://get.k3s.io | \
-                INSTALL_K3S_EXEC="server{{ extra_args }}--tls-san 192.168.1.99" \
-                sh -s -
-            creates: /usr/local/bin/k3s
-          delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
-        - name: Get k3s node token
-          ansible.builtin.shell:
-            cmd: cat /var/lib/rancher/k3s/server/node-token
-          become: true
-          register: k3s_token
-          delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
-          changed_when: false
-        - name: Download kube config
-          ansible.builtin.fetch:
-            src: /etc/rancher/k3s/k3s.yaml
-            dest: "{{ kube_config_dest }}"
-            flat: yes
-          become: true
-          delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
-        - name: Patch kube config
-          ansible.builtin.replace:
-            path: "{{ kube_config_dest }}"
-            regexp: "server: https://127.0.0.1"
-            replace: "server: https://{{ loadbalancer_ip }}"
-          delegate_to: localhost
-        - name: Join other control plane nodes
-          ansible.builtin.shell:
-            cmd: |
-              curl -sfL https://get.k3s.io | \
-                sh -s - \
-                --tls-san {{ loadbalancer_ip }} \
-                --server https://{{ loadbalancer_ip }}:6443 \
-                --token {{ k3s_token.stdout }}
-            creates: /usr/local/bin/k3s
-          delegate_to: "cloud-user@{{ item }}"
-          loop: "{{ controlplane_ips[1:] }}"
-        - name: Join worker nodes
-          ansible.builtin.shell:
-            cmd: |
-              curl -sfL https://get.k3s.io | \
-                sh -s - agent \
-                --server https://{{ loadbalancer_ip }}:6443 \
-                --token {{ k3s_token.stdout }}
-            creates: /usr/local/bin/k3s
-          delegate_to: "cloud-user@{{ item }}"
-          loop: "{{ worker_ips }}"
-      rescue:
-        - name: Uninstall k3s from all nodes
-          ansible.builtin.shell:
-            cmd: /usr/local/bin/k3s-uninstall.sh
-            removes: /usr/local/bin/k3s
-          ignore_errors: true
-          delegate_to: "cloud-user@{{ item }}"
-          loop: "{{ controlplane_ips + worker_ips }}"
+    - name: Install k3s on first control plane node
+      ansible.builtin.shell:
+        cmd: |
+          curl -sfL https://get.k3s.io | \
+            INSTALL_K3S_EXEC="server{{ extra_args }}--tls-san 192.168.1.99" \
+            sh -s -
+        creates: /usr/local/bin/k3s
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+    - name: Get k3s node token
+      ansible.builtin.shell:
+        cmd: cat /var/lib/rancher/k3s/server/node-token
+      become: true
+      register: k3s_token
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+      changed_when: false
+    - name: Download kube config
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ kube_config_dest }}"
+        flat: yes
+      become: true
+      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+    - name: Patch kube config
+      ansible.builtin.replace:
+        path: "{{ kube_config_dest }}"
+        regexp: "server: https://127.0.0.1"
+        replace: "server: https://{{ loadbalancer_ip }}"
+      delegate_to: localhost
+    - name: Join other control plane nodes
+      ansible.builtin.shell:
+        cmd: |
+          curl -sfL https://get.k3s.io | \
+            sh -s - \
+            --tls-san {{ loadbalancer_ip }} \
+            --server https://{{ loadbalancer_ip }}:6443 \
+            --token {{ k3s_token.stdout }}
+        creates: /usr/local/bin/k3s
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips[1:] }}"
+    - name: Join worker nodes
+      ansible.builtin.shell:
+        cmd: |
+          curl -sfL https://get.k3s.io | \
+            sh -s - agent \
+            --server https://{{ loadbalancer_ip }}:6443 \
+            --token {{ k3s_token.stdout }}
+        creates: /usr/local/bin/k3s
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ worker_ips }}"
+  rescue:
+    - name: Uninstall k3s from all nodes
+      ansible.builtin.shell:
+        cmd: /usr/local/bin/k3s-uninstall.sh
+        removes: /usr/local/bin/k3s
+      ignore_errors: true
+      delegate_to: "cloud-user@{{ item }}"
+      loop: "{{ controlplane_ips + worker_ips }}"

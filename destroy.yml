@@ -21,13 +21,13 @@
     - never
     - okd
 
-- name: Destroy k3s-cluster role
+- name: Destroy k3s/k8s cluster role
   hosts: all
   gather_facts: false
   vars_files:
     - defaults.yml
     - loadbalancer/defaults/main.yml
-    - k3s-cluster/defaults/main.yml
+    - cluster_vms/defaults/main.yml
   tasks:
     - name: Destroy load balancer
       ansible.builtin.include_tasks:
@@ -35,13 +35,15 @@
 
     - name: Destroy virtual machines
       ansible.builtin.include_tasks:
-        file: "k3s-cluster/tasks/{{ group_names | first }}-destroy.yml"
+        file: "cluster_vms/tasks/{{ group_names | first }}-destroy-all.yml"
   tags:
     - never
     - k3s
+    - k8s
 
 - name: Remove persistence folder
   hosts: all
+  gather_facts: false
   vars_files:
     - defaults.yml
   tasks:

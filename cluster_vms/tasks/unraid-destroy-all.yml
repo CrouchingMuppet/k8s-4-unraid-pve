@@ -3,7 +3,7 @@
     vm_files_path: "{{ unraid_vms_path }}/{{ controlplane_name }}{{ index }}"
     vm_name: "{{ controlplane_name }}{{ index }}"
   ansible.builtin.include_tasks:
-    file: okd-cluster/tasks/unraid-destroy-vm.yml
+    file: unraid-destroy.yml
   loop: "{{ controlplane_ips }}"
   loop_control:
     index_var: index
@@ -12,7 +12,7 @@
     vm_files_path: "{{ unraid_vms_path }}/{{ worker_name }}{{ index }}"
     vm_name: "{{ worker_name }}{{ index }}"
   ansible.builtin.include_tasks:
-    file: okd-cluster/tasks/unraid-destroy-vm.yml
+    file: unraid-destroy.yml
   loop: "{{ worker_ips }}"
   loop_control:
     index_var: index
