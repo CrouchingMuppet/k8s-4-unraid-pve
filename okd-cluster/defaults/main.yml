@@ -1,7 +1,7 @@
 ---
 ignition_folder: "{{ persistence_folder }}/ignition"
 
-openshift_release: 4.20.0-okd-scos.ec.16
+openshift_release: 4.21.0-okd-scos.ec.0
 openshift_install_url: https://github.com/okd-project/okd/releases/download/{{ openshift_release }}/openshift-install-linux-{{ openshift_release }}.tar.gz
 
 bootstrap_name: okd-bootstrap

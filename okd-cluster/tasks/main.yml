@@ -16,8 +16,8 @@
     - name: OpenShift installer
       block:
         - name: Download OpenShift installer # noqa: command-instead-of-module
-          ansible.builtin.command:
-            cmd: "curl -L -o {{ persistence_folder }}/openshift-install.tar.gz {{ openshift_install_url }}"
+          ansible.builtin.shell:
+            cmd: until wget -O {{ persistence_folder }}/openshift-install.tar.gz -c {{ openshift_install_url }}; do :; done
             creates: "{{ persistence_folder }}/openshift-install.tar.gz"
       rescue:
         - name: Delete OpenShift installer
@@ -44,8 +44,8 @@
     - name: Core OS image
       block:
         - name: Download scos image # noqa: command-instead-of-module
-          ansible.builtin.command:
-            cmd: "curl -L -o {{ persistence_folder }}/scos.qcow2.gz {{ coreos_url.stdout }}"
+          ansible.builtin.shell:
+            cmd: until wget -O {{ persistence_folder }}/scos.qcow2.gz -c {{ coreos_url.stdout }}; do :; done
             creates: "{{ persistence_folder }}/scos.qcow2.gz"
       rescue:
         - name: Delete scos image
