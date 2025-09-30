@@ -19,7 +19,7 @@
     mode: "0755"
 - name: Control plane machines
   vars:
-    vm_disk: cache
+    vm_disk: "{{ controlplane_disks[index] }}"
     vm_disk_size: "{{ controlplane_disk_size }}"
     vm_files_path: "{{ unraid_vms_path }}/{{ controlplane_name }}{{ index }}"
     vm_cores: "{{ controlplane_cores }}"
@@ -34,7 +34,7 @@
 - name: Worker machines
   vars:
     vm_cores: "{{ worker_cores }}"
-    vm_disk: cache
+    vm_disk: "{{ worker_disks[index] }}"
     vm_disk_size: "{{ worker_disk_size }}"
     vm_files_path: "{{ unraid_vms_path }}/{{ worker_name }}{{ index }}"
     vm_mac_addr: "{{ worker_mac_addresses[index] }}"

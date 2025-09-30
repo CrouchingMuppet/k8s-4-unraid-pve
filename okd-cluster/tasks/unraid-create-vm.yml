@@ -11,7 +11,7 @@
           qemu-img create -f qcow2 -F qcow2
             -b {{ persistence_folder }}/scos.qcow2
             {{ vm_files_path }}/scos.qcow2
-            60G
+            {{ vm_disk_size }}
         creates: "{{ vm_files_path }}/scos.qcow2"
     - name: Create VM template
       ansible.builtin.template:

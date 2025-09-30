@@ -5,4 +5,13 @@ unraid_docker_network: br0
 unraid_haproxy_appdata: /mnt/cache/appdata/haproxy
 unraid_haproxy_compose_project: "{{ persistence_folder }}/docker/haproxy"
 
-unraid_vms_path: /mnt/cache/system/vms
+unraid_vms_path: /mnt/{{ vm_disk }}/system/vms
+
+unraid_controlplane_disks:
+  - cache
+  - cache
+  - cache
+
+unraid_worker_disks:
+  - cache
+  - cache
