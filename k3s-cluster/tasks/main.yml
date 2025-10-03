@@ -2,7 +2,12 @@
 - name: Configure cluster
   vars:
     # enable distributed etcd if we are a HA cluster
-    extra_args: "{% if controlplane_ips | count > 2 %} --cluster-init {% endif %}"
+    extra_args: >
+      {% if controlplane_ips | count > 2 %}
+      --cluster-init
+      {% else %}
+      --datastore-endpoint='{{ etcd_endpoint }}'
+      {% endif %}
   block:
     - name: Install prerequisites
       vars:
@@ -43,7 +48,7 @@
       ansible.builtin.replace:
         path: "{{ kube_config_dest }}"
         regexp: "server: https://127.0.0.1"
-        replace: "server: https://{{ loadbalancer_ip }}"
+        replace: "server: https://{% if controlplane_ips | count > 1 %}{{ loadbalancer_ip }}{% else %}{{ controlplane_ips[0] }}{% endif %}"
       delegate_to: localhost
     - name: Join other control plane nodes
       ansible.builtin.shell:

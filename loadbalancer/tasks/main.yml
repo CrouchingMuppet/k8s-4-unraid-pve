@@ -1,14 +1,10 @@
 ---
 - name: Create loadbalancer
   block:
-    - name: Create persistence folder
-      ansible.builtin.file:
-        path: "{{ persistence_folder }}"
-        state: directory
-        mode: "0755"
     - name: Create haproxy container
       ansible.builtin.include_tasks:
         file: "{{ group_names | first }}-create.yml"
+      when: controlplane_ips | count > 1
   rescue:
     - name: Destroy loadbalancer
       ansible.builtin.include_tasks:
