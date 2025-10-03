@@ -1,5 +1,6 @@
 - name: Destroy control planes
   vars:
+    vm_disk: "{{ unraid_controlplane_disks[index] }}"
     vm_files_path: "{{ unraid_vms_path }}/{{ controlplane_name }}{{ index }}"
     vm_name: "{{ controlplane_name }}{{ index }}"
   ansible.builtin.include_tasks:
@@ -9,6 +10,7 @@
     index_var: index
 - name: Destroy worker nodes
   vars:
+    vm_disk: "{{ unraid_worker_disks[index] }}"
     vm_files_path: "{{ unraid_vms_path }}/{{ worker_name }}{{ index }}"
     vm_name: "{{ worker_name }}{{ index }}"
   ansible.builtin.include_tasks:
