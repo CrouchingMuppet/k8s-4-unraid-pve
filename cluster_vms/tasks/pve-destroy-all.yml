@@ -8,8 +8,6 @@
     removes: /etc/pve/qemu-server/{{ template_id }}.conf
   register: destroy_vm
   loop: "{{ controlplane_ips }}"
-  async: 30
-  poll: 3
   loop_control:
     index_var: index
 - name: Destroy worker nodes
@@ -22,8 +20,6 @@
     removes: /etc/pve/qemu-server/{{ template_id }}.conf
   register: destroy_vm
   loop: "{{ worker_ips }}"
-  async: 30
-  poll: 3
   loop_control:
     index_var: index
 - name: Destroy template machine

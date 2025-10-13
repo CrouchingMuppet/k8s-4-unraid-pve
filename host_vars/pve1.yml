@@ -1,8 +1,8 @@
 ---
 persistence_folder: /usr/local/share/k8s-4-unraid-pve
 
-pve_template_storage: templates
-pve_container_storage: local-lvm
+pve_template_storage: local
+pve_container_storage: system
 
 pve_loadbalancer_template: alpine-3.22-default_20250617_amd64.tar.xz
 pve_loadbalancer_gateway: 192.168.1.1

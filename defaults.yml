@@ -24,6 +24,6 @@ worker_mac_addresses: []
   # - 52:54:00:00:00:97
 worker_cores: 2
 worker_memory: 16384
-worker_disk_size:: 100G # we're going to use longhorn driver for storage
+worker_disk_size: 100G # we're going to use longhorn driver for storage
 
 ssh_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoO/4gD+BonVkdLKmArZPoISGar0yIWHX8HABbfIpgC miles@Miless-MBP.local

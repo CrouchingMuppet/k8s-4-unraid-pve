@@ -6,7 +6,7 @@
         --net0 virtio,bridge=vmbr0 --cpu host
       qm importdisk {{ pve_template_vm_id }} vm.qcow2 {{ pve_container_storage }}
       qm set {{ pve_template_vm_id }} --scsihw virtio-scsi-single \
-        --scsi0 {{ pve_container_storage }}:vm-{{ pve_template_vm_id }}-disk-0
+        --scsi0 {{ pve_container_storage }}:{{ pve_template_vm_id }}/vm-{{ pve_template_vm_id }}-disk-0.raw
       qm set {{ pve_template_vm_id }} --ide2 {{ pve_container_storage }}:cloudinit
       qm set {{ pve_template_vm_id }} --boot order=scsi0
       qm set {{ pve_template_vm_id }} --serial0 socket --vga serial0
@@ -30,8 +30,6 @@
       qm start {{ template_id }}
     creates: /etc/pve/qemu-server/{{ template_id }}.conf
   loop: "{{ controlplane_ips }}"
-  async: 30
-  poll: 3
   loop_control:
     index_var: index
 - name: Create worker VMs
@@ -47,7 +45,5 @@
       qm start {{ template_id }}
     creates: /etc/pve/qemu-server/{{ template_id }}.conf
   loop: "{{ worker_ips }}"
-  async: 30
-  poll: 3
   loop_control:
     index_var: index
