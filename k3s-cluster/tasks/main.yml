@@ -20,7 +20,7 @@
         state: present
         update_cache: true
       become: true
-      delegate_to: "cloud-user@{{ item }}"
+      delegate_to: "{{ vm_user }}@{{ item }}"
       loop: "{{ controlplane_ips + worker_ips }}"
     - name: Install k3s on first control plane node
       ansible.builtin.shell:
@@ -29,13 +29,13 @@
             INSTALL_K3S_EXEC="server{{ extra_args }}--tls-san 192.168.1.99" \
             sh -s -
         creates: /usr/local/bin/k3s
-      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
     - name: Get k3s node token
       ansible.builtin.shell:
         cmd: cat /var/lib/rancher/k3s/server/node-token
       become: true
       register: k3s_token
-      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
       changed_when: false
     - name: Download kube config
       ansible.builtin.fetch:
@@ -43,7 +43,7 @@
         dest: "{{ kube_config_dest }}"
         flat: yes
       become: true
-      delegate_to: "cloud-user@{{ controlplane_ips[0] }}"
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
     - name: Patch kube config
       ansible.builtin.replace:
         path: "{{ kube_config_dest }}"
@@ -59,7 +59,7 @@
             --server https://{{ loadbalancer_ip }}:6443 \
             --token {{ k3s_token.stdout }}
         creates: /usr/local/bin/k3s
-      delegate_to: "cloud-user@{{ item }}"
+      delegate_to: "{{ vm_user }}@{{ item }}"
       loop: "{{ controlplane_ips[1:] }}"
     - name: Join worker nodes
       ansible.builtin.shell:
@@ -69,7 +69,7 @@
             --server https://{{ loadbalancer_ip }}:6443 \
             --token {{ k3s_token.stdout }}
         creates: /usr/local/bin/k3s
-      delegate_to: "cloud-user@{{ item }}"
+      delegate_to: "{{ vm_user }}@{{ item }}"
       loop: "{{ worker_ips }}"
   rescue:
     - name: Uninstall k3s from all nodes
@@ -77,5 +77,5 @@
         cmd: /usr/local/bin/k3s-uninstall.sh
         removes: /usr/local/bin/k3s
       ignore_errors: true
-      delegate_to: "cloud-user@{{ item }}"
+      delegate_to: "{{ vm_user }}@{{ item }}"
       loop: "{{ controlplane_ips + worker_ips }}"

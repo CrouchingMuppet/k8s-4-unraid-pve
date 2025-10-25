@@ -41,3 +41,13 @@
   tags:
     - never
     - k8s
+
+- name: Deploy openstack role
+  hosts: all
+  gather_facts: false
+  vars_files: defaults.yml
+  roles:
+    - openstack-cluster
+  tags:
+    - never
+    - openstack

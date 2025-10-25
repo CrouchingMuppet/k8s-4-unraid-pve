@@ -1,0 +1,24 @@
+---
+- name: Configure cluster
+  block:
+    - name: Install sunbeam
+      ansible.builtin.shell:
+        cmd: snap install openstack
+        creates: /var/snap/openstack/current/config.yaml
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
+      become: true
+    - name: Prepare the node using sunbeam
+      ansible.builtin.shell:
+        cmd: sunbeam prepare-node-script --bootstrap | bash -x
+        creates: /var/snap/lxd/common/lxd/storage-pools/juju-zfs
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
+      register: prep_result
+    - name: Reboot the machine to apply group changes from prep script
+      ansible.builtin.reboot:
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
+      become: true
+      when: prep_result is not skipped
+    - name: Bootstrap the cluster
+      ansible.builtin.shell:
+        cmd: sunbeam cluster bootstrap --accept-defaults --role control,compute,storage
+      delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"

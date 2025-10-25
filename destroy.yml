@@ -21,7 +21,7 @@
     - never
     - okd
 
-- name: Destroy k3s/k8s cluster role
+- name: Destroy k3s/k8s/openstack cluster role
   hosts: all
   gather_facts: false
   vars_files:
@@ -40,6 +40,7 @@
     - never
     - k3s
     - k8s
+    - openstack
 
 - name: Remove persistence folder
   hosts: all

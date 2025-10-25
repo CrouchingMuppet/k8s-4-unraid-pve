@@ -3,6 +3,8 @@ persistence_cleanup: false
 
 kube_config_dest: ~/.kube/config
 
+domain_name: localdomain
+
 controlplane_name: k8s-controlplane
 controlplane_ips:
   - 192.168.1.93
@@ -12,18 +14,22 @@ controlplane_mac_addresses:
   - 52:54:00:00:00:93
   - 52:54:00:00:00:94
   - 52:54:00:00:00:95
-controlplane_cores: 2
+controlplane_cores: 4
 controlplane_memory: 16384
+controlplane_disk_size: 100G
 
 worker_name: k8s-worker
-worker_ips: []
+worker_ips:
+  []
   # - 192.168.1.96
   # - 192.168.1.97
-worker_mac_addresses: []
+worker_mac_addresses:
+  []
   # - 52:54:00:00:00:96
   # - 52:54:00:00:00:97
 worker_cores: 2
 worker_memory: 16384
-worker_disk_size: 100G # we're going to use longhorn driver for storage
+worker_disk_size: 100G
 
 ssh_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoO/4gD+BonVkdLKmArZPoISGar0yIWHX8HABbfIpgC miles@Miless-MBP.local
+vm_user: cloud-user

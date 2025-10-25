@@ -3,8 +3,8 @@
 This project was created for educational purposes, it is not intended for
 production use of any kind.
 
-This code currently allows the deployment of a HA or non-HA Kubernetes or
-OpenShift cluster on [Proxmox VE](https://proxmox.com/products/proxmox-virtual-environment/overview)
+This code currently allows the deployment of a HA or non-HA Kubernetes,
+Openstack or OpenShift cluster on [Proxmox VE](https://proxmox.com/products/proxmox-virtual-environment/overview)
 and [Unraid](https://unraid.net). The playbooks mostly rely on the available
 packages for the OS. This is important for Unraid which does not have any form
 of standard package management.
@@ -27,11 +27,12 @@ use whatever equivalent tooling you prefer.
 `kube_config_dest` as any existing file will be overwritten ⚠️
 
 ⚠️ `k8s` flavour does not currently have HA etcd cluster ⚠️
+⚠️ `openstack` flavour is incomplete ⚠️
 
 There are two main playbooks, use with:
 
 - `--limit` targets desired host group (`pve` or `unraid`)
-- `--tags` determines your flavour of Kubernetes, (currently `okd`, `k3s`, and `k8s` are supported)
+- `--tags` determines your flavour of Kubernetes, (currently `okd`, `k3s`, `k8s` and `openstack` are supported)
 
 There is configuration you should check:
 
@@ -63,6 +64,7 @@ uv run ansible-playbook destroy.yml --limit unraid --tags okd --extra-vars "pers
 
 1. Check defaults in:
    - `cluster-vms/defaults/main.yml`
+1. If using db-backed etcd, change `k3s/defaults/main.yml`
 1. Run a playbook using tags `k3s`
 
 e.g.
@@ -82,6 +84,19 @@ uv run ansible-playbook destroy.yml --limit pve --tags k3s
 e.g.
 
 ```sh
-uv run ansible-playbook create.yml --limit unraid --tags k3s
-uv run ansible-playbook destroy.yml --limit unraid --tags k3s --extra-vars "persistence_cleanup=true"
+uv run ansible-playbook create.yml --limit unraid --tags k8s
+uv run ansible-playbook destroy.yml --limit unraid --tags k8s --extra-vars "persistence_cleanup=true"
+```
+
+### Openstack
+
+1. Check defaults in:
+   - `cluster-vms/defaults/main.yml`
+1. Run a playbook using tags `openstack`
+
+e.g.
+
+```sh
+uv run ansible-playbook create.yml --limit unraid --tags openstack
+uv run ansible-playbook destroy.yml --limit unraid --tags openstack
 ```

@@ -1,6 +1,13 @@
 #cloud-config
 
 users:
-  - name: cloud-user
+  - default
+  - name: {{ vm_user }}
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
     ssh_authorized_keys:
       - {{ ssh_key }}
+    shell: /bin/bash
+
+manage_etc_hosts: true
+hostname: {{ vm_name }}
+fqdn: {{ vm_name }}.{{ domain_name }}
