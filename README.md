@@ -15,13 +15,10 @@ of standard package management.
 
 ### Prerequisites
 
-This project assumes the use of [mise](https://mise.jdx.dev/) and [UV](https://github.com/astral-sh/uv) for Python management. Feel free to
-use whatever equivalent tooling you prefer.
+This project assumes the use of [UV](https://github.com/astral-sh/uv) for Python management. Feel free to use whatever equivalent tooling you prefer.
 
-1. Install mise `brew install mise`
-1. Run `mise trust` in this folder
-1. Install Ansible `uv install ansible`
-1. Install Ansible collections `uv run ansible-galaxy install -r requirements.yml`
+1. Install uv `brew install uv`
+1. Install Ansible collections `uv run ansible-galaxy install -r requirements.yml --force`
 
 ⚠️ When customising configuration, please give special attention to
 `kube_config_dest` as any existing file will be overwritten ⚠️
