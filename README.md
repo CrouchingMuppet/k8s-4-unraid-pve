@@ -15,7 +15,8 @@ of standard package management.
 
 ### Prerequisites
 
-This project assumes the use of [UV](https://github.com/astral-sh/uv) for Python management. Feel free to use whatever equivalent tooling you prefer.
+This project assumes the use of [UV](https://github.com/astral-sh/uv) for
+Python management. Feel free to use whatever equivalent tooling you prefer.
 
 1. Install uv `brew install uv`
 1. Install Ansible collections `uv run ansible-galaxy install -r requirements.yml --force`
@@ -33,9 +34,24 @@ There are two main playbooks, use with:
 
 There is configuration you should check:
 
+Infrastructure IPs and authorised SSH keys:
+- `defaults.yml`
+
+Some configuration specific to your Unraid or PVE server:
 - `host_vars/*`
+
+User and host names for your Unraid or PVE server:
 - `inventory/*`
+
+For HA configuration, the load balancer IP and ports to expose:
 - `loadbalancer/defaults/main.yml`
+
+You should also make sure that your DHCP server can assign the expected IP
+addresses based on the assigned MAC addresses defined above, e.g. the first
+control plane is expected to have an IP address `192.168.1.93` and be assigned
+via DHCP using the mac address `52:54:00:00:00:93`.  You will need to modify
+the `cluster_vms\templates\kvm.xml.j2` template if you want to adapt for fixed
+IP addresses.
 
 ### OpenShift (OKD)
 

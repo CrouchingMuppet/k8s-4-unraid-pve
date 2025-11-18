@@ -31,5 +31,5 @@ worker_cores: 2
 worker_memory: 16384
 worker_disk_size: 100G
 
-ssh_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoO/4gD+BonVkdLKmArZPoISGar0yIWHX8HABbfIpgC miles@Miless-MBP.local
+ssh_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILXCtRdBWVgjEN8YI7w5UQTJaHdQHrzzmCq6msupdLAF miles@MacBookPro.localdomain
 vm_user: cloud-user
