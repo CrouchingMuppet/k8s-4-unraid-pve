@@ -1,24 +1,77 @@
 ---
 - name: Configure cluster
   block:
-    - name: Install sunbeam
+    - name: Install prerequisites on all nodes
+      ansible.builtin.apt:
+        name:
+          - snapd
+          - lxd
+        state: present
+        update_cache: true
+      become: true
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      loop: "{{ controlplane_ips + (worker_ips | default([])) }}"
+
+    - name: Install sunbeam snap on first node
       ansible.builtin.shell:
-        cmd: snap install openstack
+        cmd: snap install openstack --channel "{{ openstack_snap_channel }}"
         creates: /var/snap/openstack/current/config.yaml
       delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
       become: true
-    - name: Prepare the node using sunbeam
+
+    - name: Prepare first node using sunbeam
       ansible.builtin.shell:
         cmd: sunbeam prepare-node-script --bootstrap | bash -x
         creates: /var/snap/lxd/common/lxd/storage-pools/juju-zfs
       delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
       register: prep_result
-    - name: Reboot the machine to apply group changes from prep script
+
+    - name: Reboot first node to apply group changes
       ansible.builtin.reboot:
       delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
       become: true
       when: prep_result is not skipped
-    - name: Bootstrap the cluster
+
+    - name: Bootstrap the cluster on first node
       ansible.builtin.shell:
         cmd: sunbeam cluster bootstrap --accept-defaults --role control,compute,storage
       delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
+
+    - name: Install sunbeam snap on worker nodes
+      ansible.builtin.shell:
+        cmd: snap install openstack --channel "{{ openstack_snap_channel }}"
+        creates: /var/snap/openstack/current/config.yaml
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      become: true
+      loop: "{{ worker_ips | default([]) }}"
+      when: (worker_ips | default([])) | count > 0
+
+    - name: Prepare worker nodes using sunbeam
+      ansible.builtin.shell:
+        cmd: sunbeam prepare-node-script --bootstrap | bash -x
+        creates: /var/snap/lxd/common/lxd/storage-pools/juju-zfs
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      become: true
+      loop: "{{ worker_ips | default([]) }}"
+      when: (worker_ips | default([])) | count > 0
+
+    - name: Reboot worker nodes to apply group changes
+      ansible.builtin.reboot:
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      become: true
+      loop: "{{ worker_ips | default([]) }}"
+      when: (worker_ips | default([])) | count > 0
+
+    - name: Bootstrap worker nodes as compute
+      ansible.builtin.shell:
+        cmd: sunbeam cluster bootstrap --accept-defaults --role compute
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      loop: "{{ worker_ips | default([]) }}"
+      when: (worker_ips | default([])) | count > 0
+  rescue:
+    - name: Uninstall sunbeam from all nodes
+      ansible.builtin.shell:
+        cmd: snap remove openstack --purge
+      ignore_errors: true
+      delegate_to: "{{ vm_user }}@{{ item }}"
+      loop: "{{ controlplane_ips + (worker_ips | default([])) }}"

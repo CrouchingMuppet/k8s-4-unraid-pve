@@ -44,12 +44,14 @@
         flat: yes
       become: true
       delegate_to: "{{ vm_user }}@{{ controlplane_ips[0] }}"
-    - name: Patch kube config
+    - name: Patch kube config to use correct API server endpoint
       ansible.builtin.replace:
         path: "{{ kube_config_dest }}"
         regexp: "server: https://127.0.0.1"
-        replace: "server: https://{% if controlplane_ips | count > 1 %}{{ loadbalancer_ip }}{% else %}{{ controlplane_ips[0] }}{% endif %}"
+        replace: "server: https://{{ loadbalancer_ip if controlplane_ips | count > 1 else controlplane_ips[0] }}"
       delegate_to: localhost
+      when: kube_config_dest is defined and kube_config_dest != ""
+      ignore_errors: true
     - name: Join other control plane nodes
       ansible.builtin.shell:
         cmd: |

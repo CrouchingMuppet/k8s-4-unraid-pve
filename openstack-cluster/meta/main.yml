@@ -31,9 +31,9 @@ galaxy_info:
     #       Maximum 20 tags per role.
 
 dependencies:
-  # - role: loadbalancer
-  #   vars:
-  #     loadbalancer_api_ports: [6443]
+  - role: loadbalancer
+    vars:
+      loadbalancer_api_ports: [5000, 8774, 9696, 9292]
   - role: cluster_vms
     vars:
       vm_image_url: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img

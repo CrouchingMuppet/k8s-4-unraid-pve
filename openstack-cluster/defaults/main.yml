@@ -1,1 +1,7 @@
 ---
+openstack_api_ports:
+  - 5000
+  - 8774
+  - 9696
+  - 9292
+openstack_snap_channel: latest/stable

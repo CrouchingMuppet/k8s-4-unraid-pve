@@ -105,6 +105,8 @@ uv run ansible-playbook destroy.yml --limit unraid --tags k8s --extra-vars "pers
 
 1. Check defaults in:
    - `cluster-vms/defaults/main.yml`
+   - `openstack-cluster/defaults/main.yml` (API ports, snap channel)
+1. Configure worker nodes in `defaults.yml` (optional, can be 0)
 1. Run a playbook using tags `openstack`
 
 e.g.
